@@ -6,6 +6,11 @@
 
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/leaf_system.h"
+#include <chrono>
+#include <thread>
+#include "drake/common/proto/call_python.h"
+#include <iostream>
+#include <Eigen/Core>
 
 namespace drake {
 namespace systems {
@@ -34,6 +39,9 @@ class SimpleDiscreteTimeSystem : public LeafSystem<double> {
 
 int main() {
   // Create the simple system.
+  double dt = 1.0;
+  double T = 10.0;
+  int N = static_cast<int>(T/dt + 1.0);
   SimpleDiscreteTimeSystem system;
 
   // Create the simulator.
@@ -44,13 +52,29 @@ int main() {
       simulator.get_mutable_context().get_mutable_discrete_state();
   state[0] = 0.99;
 
-  // Simulate for 10 seconds.
-  simulator.AdvanceTo(10);
+  simulator.Initialize();
+  const auto& context = simulator.get_context();
+  Eigen::VectorXd time_steps;
+  time_steps.resize(N);
+  Eigen::VectorXd state_values;
+  state_values.resize(N);
+  time_steps[0] = 0;
+  state_values[0] =  state[0];
+  int i = 0;
+
+  while (context.get_time() < T) { // Simulate until 10 seconds.
+    simulator.AdvanceTo(context.get_time() + dt); // Advance by 0.1 seconds.
+    i++;
+    time_steps[i] = context.get_time();
+    state_values[i] = state[0];
+  }
 
   // Make sure the simulation converges to the stable fixed point at x=0.
   DRAKE_DEMAND(state[0] < 1.0e-4);
 
-  // TODO(russt): make a plot of the resulting trajectory.
+  common::CallPython("figure", 1);
+  common::CallPython("clf");
+  common::CallPython("plot", time_steps, state_values, "r");
 
   return 0;
 }

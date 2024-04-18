@@ -19,6 +19,7 @@ drake_cc_binary(
     deps = [
         "//systems/analysis:simulator",
         "//systems/framework:vector_system",
+        "//common/proto:call_python",
     ],
 )
 
